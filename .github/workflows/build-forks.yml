@@ -1,0 +1,47 @@
+name: Build Orca Forks
+on:
+  schedule:
+    - cron: '0 0 * * *' # Checks every night at midnight
+  workflow_dispatch:      # Allows you to click "Run Workflow" manually
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - fork_name: snapmaker-orca
+            repo: "Snapmaker/OrcaSlicer"
+            pattern: "Ubuntu2404.*AppImage"
+            title: "Snapmaker Orca"
+          - fork_name: fullspectrum-orca
+            repo: "ratdoux/OrcaSlicer-FullSpectrum"
+            pattern: "Ubuntu2404.*AppImage" # Updated to match your release list
+            title: "FullSpectrum Orca"
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # This creates: ghcr.io/your-username/snapmaker-orca:latest 
+          # and: ghcr.io/your-username/fullspectrum-orca:latest
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.fork_name }}:latest
+          build-args: |
+            REPO=${{ matrix.repo }}
+            PATTERN=${{ matrix.pattern }}
+            TITLE=${{ matrix.title }}
