@@ -44,6 +44,6 @@ jobs:
             REPO=${{ matrix.repo }}
             PATTERN=${{ matrix.pattern }}
             TITLE=${{ matrix.title }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
           
