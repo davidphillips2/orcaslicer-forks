@@ -16,22 +16,28 @@ ENV TITLE=${TITLE} \
     WEBKIT_DISABLE_COMPOSITING_MODE=1
 
 RUN \
-  echo "**** install initial dependencies ****" && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-    software-properties-common locales curl jq && \
-  \
-  echo "**** add PPA and install packages ****" && \
-  add-apt-repository -y ppa:xtradeb/apps && \
+  add-apt-repository ppa:xtradeb/apps && \
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive \
   apt-get install --no-install-recommends -y \
-    firefox gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 \
-    gstreamer1.0-libav gstreamer1.0-plugins-bad gstreamer1.0-plugins-base \
-    gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-pulseaudio \
-    gstreamer1.0-qt5 gstreamer1.0-tools gstreamer1.0-x libgstreamer-plugins-bad1.0 \
-    libmspack0 libwebkit2gtk-4.1-0 libwx-perl libfuse2 && \
-  \
+    firefox \
+    gstreamer1.0-alsa \
+    gstreamer1.0-gl \
+    gstreamer1.0-gtk3 \
+    gstreamer1.0-libav \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-qt5 \
+    gstreamer1.0-tools \
+    gstreamer1.0-x \
+    libgstreamer-plugins-bad1.0 \
+    libmspack0 \
+    libwebkit2gtk-4.1-0 \
+    libwx-perl && \
+
   echo "**** fetching from ${REPO} ****" && \
   DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/${REPO}/releases" | jq -r --arg PATTERN "$PATTERN" '.[0].assets[] | select(.name | test($PATTERN)) | .browser_download_url' | head -n 1) && \
   \
@@ -51,25 +57,14 @@ RUN \
   \
   echo "**** cleanup ****" && \
   apt-get autoclean && \
-  rm -rf /var/lib/apt/lists/* /tmp/*
-
+  rm -rf \
+    /config/.cache \
+    /config/.launchpadlib \
+    /var/lib/apt/lists/* \
+    /var/tmp/* \
+    /tmp/*
+  
+COPY /root /
 # Standard ports and volumes
 EXPOSE 3001
 VOLUME /config
-
-# 1. Force the app to use /config for its internal profiles/settings
-# 2. Disable the built-in auto-updater which often causes the 'ota' crash
-ENV HOME=/config \
-    XDG_CONFIG_HOME=/config \
-    APPIMAGE_EXIT_AFTER_EXTRACT=1 \
-    I_STILL_WANT_TO_RUN_AS_ROOT=false
-
-WORKDIR /opt/orcaslicer
-
-# Ensure the extracted files are writable by the user running the app
-RUN chown -R abc:abc /opt/orcaslicer /config
-
-USER abc
-
-# Pass the config-dir flag directly to OrcaSlicer to force it to use the volume
-CMD ["./AppRun", "--no-sandbox", "--config-dir", "/config"]
