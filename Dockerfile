@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
 
-ARG REPO="Snapmaker/OrcaSlicer"
-ARG PATTERN="Ubuntu2404.*AppImage"
-ARG TITLE="OrcaSlicer"
+# These ARGs are populated by your GitHub Workflow matrix
+ARG REPO
+ARG PATTERN
+ARG TITLE
 
 LABEL maintainer="davidphillips2"
 
-# WEBKIT_DISABLE_COMPOSITING_MODE helps prevent flickering/blank screens in VNC
+# WEBKIT_DISABLE_COMPOSITING_MODE prevents flickering in KasmVNC/Selkies
 ENV TITLE=${TITLE} \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
     NO_GAMEPAD=true \
@@ -45,19 +46,19 @@ RUN \
   echo "**** generate locale ****" && \
   locale-gen en_GB.UTF-8 && \
   \
-  echo "**** set permissions ****" && \
+  echo "**** set permissions for the abc user ****" && \
   chown -R abc:abc /opt/orcaslicer && \
   \
   echo "**** cleanup ****" && \
   apt-get autoclean && \
   rm -rf /var/lib/apt/lists/* /tmp/*
 
-# Ports and Volumes
+# Standard ports and volumes
 EXPOSE 3001
 VOLUME /config
 
 # Execution logic
 WORKDIR /opt/orcaslicer
-# Running via the internal 'abc' user provided by the base image
+# Running as the 'abc' user ensures the /config volume mapping works correctly
 USER abc
 CMD ["./AppRun", "--no-sandbox"]
