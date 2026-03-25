@@ -17,7 +17,7 @@ RUN \
   echo "**** add icon ****" && \
   curl -o \
     /usr/share/selkies/www/icon.png \
-    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/orcaslicer-logo.png
+    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/orcaslicer-logo.png && \
   echo "**** install packages ****" && \
   add-apt-repository ppa:xtradeb/apps && \
   apt-get update && \
