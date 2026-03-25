@@ -57,8 +57,19 @@ RUN \
 EXPOSE 3001
 VOLUME /config
 
-# Execution logic
+# 1. Force the app to use /config for its internal profiles/settings
+# 2. Disable the built-in auto-updater which often causes the 'ota' crash
+ENV HOME=/config \
+    XDG_CONFIG_HOME=/config \
+    APPIMAGE_EXIT_AFTER_EXTRACT=1 \
+    I_STILL_WANT_TO_RUN_AS_ROOT=false
+
 WORKDIR /opt/orcaslicer
-# Running as the 'abc' user ensures the /config volume mapping works correctly
+
+# Ensure the extracted files are writable by the user running the app
+RUN chown -R abc:abc /opt/orcaslicer /config
+
 USER abc
-CMD ["./AppRun", "--no-sandbox"]
+
+# Pass the config-dir flag directly to OrcaSlicer to force it to use the volume
+CMD ["./AppRun", "--no-sandbox", "--config-dir", "/config"]
