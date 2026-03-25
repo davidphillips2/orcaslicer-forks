@@ -1,24 +1,25 @@
 # syntax=docker/dockerfile:1
 FROM ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
 
-# Build Arguments to switch between forks
 ARG REPO="Snapmaker/OrcaSlicer"
 ARG PATTERN="Ubuntu2404.*AppImage"
 ARG TITLE="OrcaSlicer"
 
-# set version label
-ARG BUILD_DATE
-ARG VERSION
-LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="thelamer"
 
 ENV TITLE=${TITLE} \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    NO_GAMEPAD=true
+    NO_GAMEPAD=true \
+    LC_ALL=en_GB.UTF-8
 
 RUN \
-  echo "**** install packages ****" && \
-  add-apt-repository ppa:xtradeb/apps && \
+  echo "**** install initial dependencies ****" && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    software-properties-common locales curl jq && \
+  \
+  echo "**** add PPA and install packages ****" && \
+  add-apt-repository -y ppa:xtradeb/apps && \
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive \
   apt-get install --no-install-recommends -y \
@@ -29,16 +30,19 @@ RUN \
     libmspack0 libwebkit2gtk-4.1-0 libwx-perl && \
   \
   echo "**** fetching from ${REPO} ****" && \
-  ORCA_TAG=$(curl -sX GET "https://api.github.com/repos/${REPO}/releases/latest" | awk '/tag_name/{print $4;exit}' FS='[""]') && \
-  DOWNLOAD_URL=$(curl -sX GET "https://api.github.com/repos/${REPO}/releases/tags/${ORCA_TAG}" \
-    | awk "/browser_download_url.*${PATTERN}/{print \$4;exit}" FS='[""]') && \
+  # This new command finds the most recent release (including pre-releases)
+  DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/${REPO}/releases" | jq -r --arg PATTERN "$PATTERN" '.[0].assets[] | select(.name | test($PATTERN)) | .browser_download_url' | head -n 1) && \
+  \
+  if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then echo "ERROR: Could not find a download matching $PATTERN in $REPO"; exit 1; fi && \
   \
   cd /tmp && \
   curl -o /tmp/orca.app -L "${DOWNLOAD_URL}" && \
   chmod +x /tmp/orca.app && \
   ./orca.app --appimage-extract && \
   mv squashfs-root /opt/orcaslicer && \
-  localedef -i en_GB -f UTF-8 en_GB.UTF-8 && \
+  \
+  echo "**** generate locale ****" && \
+  locale-gen en_GB.UTF-8 && \
   \
   echo "**** cleanup ****" && \
   apt-get autoclean && \
