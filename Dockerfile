@@ -64,7 +64,7 @@ RUN \
     /var/tmp/* \
     /tmp/*
   
-COPY /root /
+
 # Standard ports and volumes
 EXPOSE 3001
 VOLUME /config
