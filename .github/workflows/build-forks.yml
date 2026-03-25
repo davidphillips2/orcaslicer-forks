@@ -1,8 +1,8 @@
 name: Build Orca Forks
 on:
   schedule:
-    - cron: '0 0 * * *' # Checks every night at midnight
-  workflow_dispatch:      # Allows you to click "Run Workflow" manually
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,6 +12,7 @@ jobs:
       packages: write
 
     strategy:
+      fail-fast: false # This prevents one failure from stopping the other build
       matrix:
         include:
           - fork_name: snapmaker-orca
@@ -20,7 +21,7 @@ jobs:
             title: "Snapmaker Orca"
           - fork_name: fullspectrum-orca
             repo: "ratdoux/OrcaSlicer-FullSpectrum"
-            pattern: "Ubuntu2404.*AppImage" # Updated to match your release list
+            pattern: "Ubuntu2404.*AppImage"
             title: "FullSpectrum Orca"
 
     steps:
@@ -34,12 +35,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6 # Updated version
         with:
           context: .
           push: true
-          # This creates: ghcr.io/your-username/snapmaker-orca:latest 
-          # and: ghcr.io/your-username/fullspectrum-orca:latest
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.fork_name }}:latest
           build-args: |
             REPO=${{ matrix.repo }}
